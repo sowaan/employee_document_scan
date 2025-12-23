@@ -1,0 +1,91 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-12-21 19:39:43.079971",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_r2ch",
+  "amended_from",
+  "front_image",
+  "column_break_kwte",
+  "back_image",
+  "naming_series",
+  "section_break_hddv",
+  "extracted_data"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_r2ch",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Scanned Documents",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "front_image",
+   "fieldtype": "Attach Image",
+   "label": "Document Image 1"
+  },
+  {
+   "fieldname": "column_break_kwte",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "back_image",
+   "fieldtype": "Attach Image",
+   "label": "Document Image 2"
+  },
+  {
+   "fieldname": "section_break_hddv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "extracted_data",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Extracted Data"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "SD-.#####"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-22 20:50:59.771950",
+ "modified_by": "Administrator",
+ "module": "Employee Document Scan",
+ "name": "Scanned Documents",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
