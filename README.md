@@ -18,5 +18,5 @@ MIT
 
 ## Documentation
 
-- [Full Documentation](docs/full_documentation.md)
+- [Full Documentation](employee_document_scan/docs/full_documentation.md)
 
