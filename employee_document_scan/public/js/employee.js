@@ -52,7 +52,7 @@ frappe.ui.form.on('Employee', {
                 const preview = d.$wrapper.find('#scan-preview');
 
                 let latest_doc = await frappe.db.get_list('Scanned Documents', {
-                    fields: ['name', 'front_image', 'back_image'],
+                    fields: ['name', 'front_image', 'back_image','is_single'],
                     filters: [['owner', '=', frappe.session.user]],
                     order_by: 'creation desc',
                     limit: 1
@@ -65,22 +65,52 @@ frappe.ui.form.on('Employee', {
 
                 const doc = latest_doc[0];
 
+                // Pick whichever image exists for single-side docs
+                const single_image = doc.front_image || doc.back_image || '';
+
+                let images_html = '';
+
+                // SINGLE-SIDE DOCUMENT
+                if (doc.is_single) {
+                    images_html = `
+                        <div style="text-align:center; margin-top:10px;">
+                            <p><b>Scanned Image</b></p>
+                            ${single_image ? `
+                                <img src="${single_image}" style="width:100%; max-width:220px;">
+                            ` : `
+                                <p style="color:orange;">No image available</p>
+                            `}
+                        </div>
+                    `;
+                }
+                // TWO-SIDE DOCUMENT
+                else {
+                    images_html = `
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <div style="text-align:center;">
+                                <p><b>Scanned Image (Front)</b></p>
+                                ${doc.front_image
+                                    ? `<img src="${doc.front_image}" style="width:100%; max-width:200px;">`
+                                    : `<p style="color:orange;">Missing</p>`
+                                }
+                            </div>
+                            <div style="text-align:center;">
+                                <p><b>Scanned Image (Back)</b></p>
+                                ${doc.back_image
+                                    ? `<img src="${doc.back_image}" style="width:100%; max-width:200px;">`
+                                    : `<p style="color:orange;">Missing</p>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                }
+
                 preview.html(`
                     <p><b>Scan Reference:</b> ${doc.name}</p>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <div style="text-align:center;">
-                            <p><b>Scanned Image (Side 1)</b></p>
-                            <img src="${doc.front_image}" style="width:100%; max-width:200px;">
-                        </div>
-                        <div style="text-align:center;">
-                            <p><b>Scanned Image (Side 2)</b></p>
-                            <img src="${doc.back_image}" style="width:100%; max-width:200px;">
-                        </div>
-                    </div>
+                    ${images_html}
                 `);
 
-                frm.set_value('custom_passport_front_image', doc.front_image || '');
-                frm.set_value('custom_passport_back_image', doc.back_image || '');
+
             });
 
         });
