@@ -154,7 +154,6 @@ function parseMRZ(mrz_input) {
 }
 
 
-// Helper: parse date
 function parseDate(dateStr) {
     if (!dateStr) return '';
     const parts = dateStr.split('-');
@@ -165,10 +164,18 @@ function parseDate(dateStr) {
     let year = parts[2];
 
     if (year.length === 2) {
-        year = '20' + year;
+        const yy = parseInt(year, 10);
+        const currentYear = new Date().getFullYear() % 100; // last 2 digits of current year
+
+        if (yy <= currentYear) {
+            year = '20' + year;  // e.g., 23 → 2023
+        } else {
+            year = '19' + year;  // e.g., 94 → 1994
+        }
     }
 
     return `${year}-${month}-${day}`;
 }
+
 
 
