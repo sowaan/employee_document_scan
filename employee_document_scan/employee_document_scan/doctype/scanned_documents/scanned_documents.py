@@ -4,7 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from PIL import Image, ImageEnhance, ImageFilter
-import pytesseract
+# import pytesseract
 import os
 import urllib.parse
 import re

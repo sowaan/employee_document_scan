@@ -1,6 +1,41 @@
 frappe.ui.form.on('Employee', {
     refresh: function(frm) {
 
+        frm.add_custom_button(__('Fetch EID Data'), async function() {
+        try {
+            // Show top progress bar
+            frappe.show_progress(__('Fetching EID data...'), 0, 100);
+
+            // Fake incremental progress (optional)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress = Math.min(progress + 5, 90); // increase until 90%
+                frappe.show_progress(__('Fetching EID data...'), progress, 100);
+            }, 100);
+
+            // Fetch EID data
+            await fetchAndSetEID(frm);
+
+            // Complete progress bar
+            frappe.show_progress(__('Fetching EID data...'), 100, 100);
+            clearInterval(progressInterval);
+
+        } catch (error) {
+            console.error(error);
+            frappe.msgprint({
+                title: __('Error'),
+                message: __('Failed to fetch EID data.'),
+                indicator: 'red'
+            });
+        } finally {
+            // Remove progress bar after short delay
+            setTimeout(() => {
+                frappe.hide_progress();
+            }, 300);
+        }
+    });
+
+
         frm.add_custom_button(__('Scan & Attach ID'), function() {
 
             let d = new frappe.ui.Dialog({
@@ -151,9 +186,7 @@ function parseMRZ(mrz_input) {
     });
 
     return parsed;
-}
-
-
+};
 function parseDate(dateStr) {
     if (!dateStr) return '';
     const parts = dateStr.split('-');
@@ -178,4 +211,160 @@ function parseDate(dateStr) {
 }
 
 
+// Helper function to safely set values
+function setField(frm, fieldname, value) {
+    frm.set_value(fieldname, value || '');
+}
+
+
+
+
+
+//Parse MRZ blocks safely (unchanged, solid)
+
+function parseMRZ(mrz_input) {
+    const parsed = {};
+
+    const blocks = mrz_input
+        .split(/START|END/)
+        .map(b => b.trim())
+        .filter(b => b);
+
+    blocks.forEach(block => {
+        const hasData = block.split('\n').some(line => {
+            if (line.includes(':')) {
+                const value = line.split(':').slice(1).join(':').trim();
+                return value !== '';
+            }
+            return false;
+        });
+        if (!hasData) return;
+
+        block.split('\n').forEach(line => {
+            line = line.trim();
+            if (line.includes(':')) {
+                let [key, ...rest] = line.split(':');
+                key = key.trim().toLowerCase().replace(/ /g, '_');
+                const value = rest.join(':').trim();
+                if (value) parsed[key] = value;
+            }
+        });
+    });
+
+    return parsed;
+}
+
+/**
+ * Normalize date to YYYY-MM-DD
+ * Supports:
+ *  - DD/MM/YYYY  (EID)
+ *  - DD-MM-YYYY
+ *  - DD-MM-YY    (MRZ)
+ */
+function normalizeDateToYMD(dateStr) {
+    if (!dateStr) return '';
+
+    const separator = dateStr.includes('/') ? '/' : '-';
+    const parts = dateStr.split(separator);
+
+    if (parts.length !== 3) return '';
+
+    let [day, month, year] = parts.map(p => p.trim());
+
+    // Handle 2-digit year (MRZ)
+    if (year.length === 2) {
+        const yy = parseInt(year, 10);
+        const currentYY = new Date().getFullYear() % 100;
+        year = yy <= currentYY ? `20${year}` : `19${year}`;
+    }
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+function mapGender(gender) {
+    if (!gender) return '';
+    const g = gender.toUpperCase();
+    if (g === 'M') return 'Male';
+    if (g === 'F') return 'Female';
+    return '';
+}
+
+async function fetchAndSetEID(frm) {
+    try {
+        const response = await fetch(
+            'http://localhost:9005/api/eidservices/read_data_eid',
+            {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+
+        if (!response.ok) {
+            frappe.msgprint({
+                title: __('EID Reader Error'),
+                message: __('Failed to connect to the EID reader.'),
+                indicator: 'red'
+            });
+            return;
+        }
+
+        let data = await response.json();
+        if (typeof data === 'string') data = JSON.parse(data);
+
+        console.log('Parsed EID response:', data);
+
+        if (!data.EID) {
+            frappe.msgprint({
+                title: __('EID Reader'),
+                message: __('No card detected or data not available.'),
+                indicator: 'orange'
+            });
+            return;
+        }
+
+        //MAIN FORM FIELDS
+        
+        frm.set_value('first_name', data.Name || '');
+        frm.set_value('custom_employee_name_in_arabic', data.NameAr || '');
+        // frm.set_value('gender', data.Gender || '');
+        frm.set_value('gender', mapGender(data.Gender));
+        frm.set_value('custom_nationality', data.Nationality || '');
+
+        frm.set_value(
+            'date_of_birth',
+            normalizeDateToYMD(data.DOB)
+        );
+
+        // CHILD TABLE Fields
+        
+        frm.clear_table('custom_emirates_id_info');
+
+        const row = frm.add_child('custom_emirates_id_info');
+
+        row.emirates_id_no = data.EID || '';
+        row.issuance_date = normalizeDateToYMD(data.IssueDate);
+        row.expiry_date = normalizeDateToYMD(data.Expiry);
+
+        // // Image field (must be Image type)
+        // row.emirates_id_attachment = data.Photo
+        //     ? `data:image/jpeg;base64,${data.Photo}`
+        //     : '';
+
+        frm.refresh_field('custom_emirates_id_info');
+        await frm.save();
+
+        frappe.msgprint({
+            title: __('Success'),
+            message: __('EID data fetched successfully!'),
+            indicator: 'green'
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch EID data:', error);
+        frappe.msgprint({
+            title: __('EID Reader Error'),
+            message: error.message,
+            indicator: 'red'
+        });
+    }
+}
 
