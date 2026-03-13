@@ -61,6 +61,7 @@ frappe.ui.form.on('Employee', {
                 ],
                 primary_action_label: __('Apply & Save'),
                 primary_action: async function() {
+
                     const values = d.get_values();
                     const mrz = values.mrz_input;
 
@@ -76,7 +77,64 @@ frappe.ui.form.on('Employee', {
                         if (parsed.issuing_state) frm.set_value('place_of_issue', parsed.issuing_state);
                     }
 
-                    frm.save();
+                    let latest_doc = await frappe.db.get_list('Scanned Documents', {
+                        fields: ['name', 'front_image', 'back_image'],
+                        filters: [['owner', '=', frappe.session.user]],
+                        order_by: 'creation desc',
+                        limit: 1
+                    });
+
+                    if (latest_doc.length) {
+
+                        const doc = latest_doc[0];
+                        let attachments = [];
+
+                        if (doc.front_image) {
+                            let front_file = await frappe.db.get_value(
+                                'File',
+                                { file_url: doc.front_image },
+                                'name'
+                            );
+
+                            if (front_file?.message?.name) {
+                                attachments.push(front_file.message.name);
+                            }
+                        }
+
+                        if (doc.back_image) {
+                            let back_file = await frappe.db.get_value(
+                                'File',
+                                { file_url: doc.back_image },
+                                'name'
+                            );
+
+                            if (back_file?.message?.name) {
+                                attachments.push(back_file.message.name);
+                            }
+                        }
+
+                        if (attachments.length) {
+
+                            await frappe.call({
+                                method: "frappe.utils.file_manager.add_attachments",
+                                args: {
+                                    doctype: frm.doctype,
+                                    name: frm.docname,
+                                    attachments: attachments
+                                }
+                            });
+
+                        }
+                    }
+
+                    await frm.save();
+
+                    frappe.msgprint({
+                        title: __('Success'),
+                        message: __('Images attached successfully'),
+                        indicator: 'green'
+                    });
+
                     d.hide();
                 }
             });
