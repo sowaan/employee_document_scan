@@ -113,27 +113,48 @@ frappe.ui.form.on('Employee', {
                             }
                         }
 
-                        if (attachments.length) {
+                        // if (attachments.length) {
 
-                            await frappe.call({
-                                method: "frappe.utils.file_manager.add_attachments",
-                                args: {
-                                    doctype: frm.doctype,
-                                    name: frm.docname,
-                                    attachments: attachments
-                                }
-                            });
+                        //     await frappe.call({
+                        //         method: "frappe.utils.file_manager.add_attachments",
+                        //         args: {
+                        //             doctype: frm.doctype,
+                        //             name: frm.docname,
+                        //             attachments: attachments
+                        //         }
+                        //     });
 
+                        // }
+                        if (latest_doc.length) {
+                            const doc = latest_doc[0];
+
+                            // Determine images to set
+                            if (doc.is_single) {
+                                // Single image → store in front image field
+                                frm.set_value('custom_passport_front_image', doc.front_image || doc.back_image || '');
+                                frm.set_value('custom_passport_back_image', ''); // empty back field
+                            } else {
+                                // Two images
+                                frm.set_value('custom_passport_front_image', doc.front_image || '');
+                                frm.set_value('custom_passport_back_image', doc.back_image || '');
+                            }
                         }
+
+                        // No need to call file_manager, field values are now set
+                        frappe.msgprint({
+                            title: __('Success'),
+                            message: __('Scanned image(s) set successfully'),
+                            indicator: 'green'
+                        });
                     }
 
                     await frm.save();
 
-                    frappe.msgprint({
-                        title: __('Success'),
-                        message: __('Images attached successfully'),
-                        indicator: 'green'
-                    });
+                    // frappe.msgprint({
+                    //     title: __('Success'),
+                    //     message: __('Images attached successfully'),
+                    //     indicator: 'green'
+                    // });
 
                     d.hide();
                 }
