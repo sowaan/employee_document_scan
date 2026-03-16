@@ -56,7 +56,8 @@ fixtures = [
                 "name", "in", [
                     "Employee-custom_passport_front_image",
                     "Employee-custom_passport_back_image",
-                    "Employee-custom_nationality"
+                    "Employee-custom_nationality",
+                    "Employee-custom_eid_signature"
                 ]
             ]
         ]
