@@ -422,12 +422,22 @@ async function fetchAndSetEID(frm) {
         row.emirates_id_no = data.EID || '';
         row.issuance_date = normalizeDateToYMD(data.IssueDate);
         row.expiry_date = normalizeDateToYMD(data.Expiry);
-
-        // // Image field (must be Image type)
-        // row.emirates_id_attachment = data.Photo
-        //     ? `data:image/jpeg;base64,${data.Photo}`
-        //     : '';
-
+        // NEW FIELDS
+        frm.set_value('personal_email', data.Email || '');
+        frm.set_value('cell_number', data.Phone || '');
+        
+        // Image field (must be Image type)
+        row.emirates_id_attachment = data.Photo
+            ? `data:image/jpeg;base64,${data.Photo}`
+            : '';
+        // Set the signature image in the main form field
+        frm.set_value(
+            'custom_eid_signature',
+            data.PhotoSignature
+                ? `data:image/jpeg;base64,${data.PhotoSignature}`
+                : ''
+        );
+        
         frm.refresh_field('custom_emirates_id_info');
         await frm.save();
 
