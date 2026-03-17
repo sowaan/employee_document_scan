@@ -434,7 +434,7 @@ async function fetchAndSetEID(frm) {
         frm.set_value(
             'custom_eid_signature',
             data.PhotoSignature
-                ? `data:image/jpeg;base64,${data.PhotoSignature}`
+                ? `data:image/tiff;base64,${data.PhotoSignature}`
                 : ''
         );
         
