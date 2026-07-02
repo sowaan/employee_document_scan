@@ -370,7 +370,7 @@ function mapGender(gender) {
 async function fetchAndSetEID(frm) {
     try {
         const response = await fetch(
-            'http://localhost:9005/api/eidservices/read_data_eid',
+            'http://localhost:9005/api/EidServices/Read_Data_EID',
             {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
