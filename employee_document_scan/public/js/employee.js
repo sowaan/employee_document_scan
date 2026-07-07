@@ -420,7 +420,7 @@ async function fetchAndSetEID(frm) {
 
         // CHILD TABLE Fields
         
-        frm.clear_table('custom_emirates_id_info');
+        frm.clear_table('custom_emirates_id');
 
         const row = frm.add_child('custom_emirates_id');
 
@@ -437,7 +437,11 @@ async function fetchAndSetEID(frm) {
         frm.set_value('cell_number', data.Phone || '');
         
         // Image field (must be Image type)
-        row.emirates_id_attachment = data.Photo
+        // row.emirates_id_attachment = data.Photo
+        //     ? `data:image/jpeg;base64,${data.Photo}`
+        //     : '';        
+        // Image field (must be Image type)
+        row.eid_attachment = data.Photo
             ? `data:image/jpeg;base64,${data.Photo}`
             : '';
         // Set the signature image in the main form field
