@@ -367,6 +367,16 @@ function mapGender(gender) {
     return '';
 }
 
+function isTableField(frm, fieldname) {
+    return frm.get_field(fieldname)?.df?.fieldtype === 'Table';
+}
+
+function clearInvalidListValue(frm, fieldname) {
+    if (!isTableField(frm, fieldname) && Array.isArray(frm.doc[fieldname])) {
+        frm.doc[fieldname] = '';
+    }
+}
+
 async function fetchAndSetEID(frm) {
     try {
         const response = await fetch(
@@ -418,32 +428,28 @@ async function fetchAndSetEID(frm) {
             normalizeDateToYMD(data.DOB)
         );
 
-        // CHILD TABLE Fields
-        
-        frm.clear_table('custom_emirates_id');
+        clearInvalidListValue(frm, 'custom_emirates_id_info');
+        clearInvalidListValue(frm, 'custom_emirates_id');
 
-        const row = frm.add_child('custom_emirates_id');
+        if (isTableField(frm, 'custom_emirates_id')) {
+            frm.clear_table('custom_emirates_id');
 
-        // row.emirates_id_no = data.EID || '';
-        // row.issuance_date = normalizeDateToYMD(data.IssueDate);
-        // row.expiry_date = normalizeDateToYMD(data.Expiry);
+            const row = frm.add_child('custom_emirates_id');
 
-        row.eid_no = data.EID || '';
-        row.eid_issue_date = normalizeDateToYMD(data.IssueDate);
-        row.eid_expiry_date = normalizeDateToYMD(data.Expiry);
+            row.eid_no = data.EID || '';
+            row.eid_issue_date = normalizeDateToYMD(data.IssueDate);
+            row.eid_expiry_date = normalizeDateToYMD(data.Expiry);
+            row.eid_attachment = data.Photo
+                ? `data:image/jpeg;base64,${data.Photo}`
+                : '';
+
+            frm.refresh_field('custom_emirates_id');
+        }
         
         // NEW FIELDS
         frm.set_value('personal_email', data.Email || '');
         frm.set_value('cell_number', data.Phone || '');
         
-        // Image field (must be Image type)
-        // row.emirates_id_attachment = data.Photo
-        //     ? `data:image/jpeg;base64,${data.Photo}`
-        //     : '';        
-        // Image field (must be Image type)
-        row.eid_attachment = data.Photo
-            ? `data:image/jpeg;base64,${data.Photo}`
-            : '';
         // Set the signature image in the main form field
         frm.set_value(
             'custom_eid_signature',
@@ -451,8 +457,7 @@ async function fetchAndSetEID(frm) {
                 ? `data:image/tiff;base64,${data.PhotoSignature}`
                 : ''
         );
-        
-        frm.refresh_field('custom_emirates_id_info');
+
         await frm.save();
 
         frappe.msgprint({
@@ -470,4 +475,3 @@ async function fetchAndSetEID(frm) {
         });
     }
 }
-
