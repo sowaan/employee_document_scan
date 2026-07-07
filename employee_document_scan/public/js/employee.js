@@ -422,7 +422,7 @@ async function fetchAndSetEID(frm) {
         
         frm.clear_table('custom_emirates_id_info');
 
-        const row = frm.add_child('custom_emirates_id_info');
+        const row = frm.add_child('custom_emirates_id');
 
         // row.emirates_id_no = data.EID || '';
         // row.issuance_date = normalizeDateToYMD(data.IssueDate);
