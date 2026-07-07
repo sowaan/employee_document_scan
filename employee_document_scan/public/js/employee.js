@@ -377,6 +377,52 @@ function clearInvalidListValue(frm, fieldname) {
     }
 }
 
+function base64ToBlob(base64, mimeType) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    return new Blob([bytes], { type: mimeType });
+}
+
+async function uploadBase64Attachment(frm, base64, filename, fieldname, mimeType) {
+    if (!base64) return '';
+
+    if (frm.is_new()) {
+        await frm.save();
+    }
+
+    const formData = new FormData();
+    formData.append('file', base64ToBlob(base64, mimeType), filename);
+    formData.append('is_private', '0');
+    formData.append('doctype', frm.doctype);
+    formData.append('docname', frm.docname);
+    formData.append('fieldname', fieldname);
+
+    const response = await fetch('/api/method/upload_file', {
+        method: 'POST',
+        headers: {
+            'X-Frappe-CSRF-Token': frappe.csrf_token
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error(__('Failed to upload employee photo.'));
+    }
+
+    const result = await response.json();
+    return result.message?.file_url || '';
+}
+
+function getEmployeePhotoField(frm) {
+    const possible_fields = ['image', 'employee_image', 'custom_employee_photo', 'custom_photo'];
+    return possible_fields.find(fieldname => frm.get_field(fieldname)) || '';
+}
+
 async function fetchAndSetEID(frm) {
     try {
         const response = await fetch(
@@ -431,17 +477,16 @@ async function fetchAndSetEID(frm) {
         clearInvalidListValue(frm, 'custom_emirates_id_info');
         clearInvalidListValue(frm, 'custom_emirates_id');
 
+        let eid_row = null;
+
         if (isTableField(frm, 'custom_emirates_id')) {
             frm.clear_table('custom_emirates_id');
 
-            const row = frm.add_child('custom_emirates_id');
+            eid_row = frm.add_child('custom_emirates_id');
 
-            row.eid_no = data.EID || '';
-            row.eid_issue_date = normalizeDateToYMD(data.IssueDate);
-            row.eid_expiry_date = normalizeDateToYMD(data.Expiry);
-            row.eid_attachment = data.Photo
-                ? `data:image/jpeg;base64,${data.Photo}`
-                : '';
+            eid_row.eid_no = data.EID || '';
+            eid_row.eid_issue_date = normalizeDateToYMD(data.IssueDate);
+            eid_row.eid_expiry_date = normalizeDateToYMD(data.Expiry);
 
             frm.refresh_field('custom_emirates_id');
         }
@@ -449,6 +494,28 @@ async function fetchAndSetEID(frm) {
         // NEW FIELDS
         frm.set_value('personal_email', data.Email || '');
         frm.set_value('cell_number', data.Phone || '');
+
+        if (data.Photo) {
+            const employee_photo_field = getEmployeePhotoField(frm);
+            const photo_url = employee_photo_field
+                ? await uploadBase64Attachment(
+                    frm,
+                    data.Photo,
+                    `eid-photo-${data.EID || frm.docname}.jpg`,
+                    employee_photo_field,
+                    'image/jpeg'
+                )
+                : '';
+
+            if (photo_url) {
+                frm.set_value(employee_photo_field, photo_url);
+
+                if (eid_row) {
+                    eid_row.eid_attachment = photo_url;
+                    frm.refresh_field('custom_emirates_id');
+                }
+            }
+        }
         
         // Set the signature image in the main form field
         frm.set_value(
