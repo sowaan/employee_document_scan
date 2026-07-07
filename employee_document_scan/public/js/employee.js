@@ -408,6 +408,11 @@ async function fetchAndSetEID(frm) {
         frm.set_value('gender', mapGender(data.Gender));
         frm.set_value('custom_nationality', data.Nationality || '');
 
+        //predicted data fields need to be varified
+        frm.set_value('custom_emirates_id_no_1', data.EID || '');
+        frm.set_value('custom_emirates_id_issue_date', normalizeDateToYMD(data.IssueDate));
+        frm.set_value('custom_emirates_id_expiry', normalizeDateToYMD(data.Expiry));
+
         frm.set_value(
             'date_of_birth',
             normalizeDateToYMD(data.DOB)
@@ -419,9 +424,14 @@ async function fetchAndSetEID(frm) {
 
         const row = frm.add_child('custom_emirates_id_info');
 
-        row.emirates_id_no = data.EID || '';
-        row.issuance_date = normalizeDateToYMD(data.IssueDate);
-        row.expiry_date = normalizeDateToYMD(data.Expiry);
+        // row.emirates_id_no = data.EID || '';
+        // row.issuance_date = normalizeDateToYMD(data.IssueDate);
+        // row.expiry_date = normalizeDateToYMD(data.Expiry);
+
+        row.eid_no = data.EID || '';
+        row.eid_issue_date = normalizeDateToYMD(data.IssueDate);
+        row.eid_expiry_date = normalizeDateToYMD(data.Expiry);
+        
         // NEW FIELDS
         frm.set_value('personal_email', data.Email || '');
         frm.set_value('cell_number', data.Phone || '');
