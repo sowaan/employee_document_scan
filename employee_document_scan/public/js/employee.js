@@ -78,8 +78,7 @@ frappe.ui.form.on('Employee', {
                     }
 
                     let latest_doc = await frappe.db.get_list('Scanned Documents', {
-                        fields: ['name', 'front_image', 'back_image'],
-                        filters: [['owner', '=', frappe.session.user]],
+                        fields: ['name', 'front_image', 'back_image', 'is_single'],
                         order_by: 'creation desc',
                         limit: 1
                     });
@@ -167,7 +166,6 @@ frappe.ui.form.on('Employee', {
 
                 let latest_doc = await frappe.db.get_list('Scanned Documents', {
                     fields: ['name', 'front_image', 'back_image','is_single'],
-                    filters: [['owner', '=', frappe.session.user]],
                     order_by: 'creation desc',
                     limit: 1
                 });
