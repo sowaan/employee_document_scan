@@ -153,18 +153,27 @@ frappe.ui.form.on('Employee', {
                     }
 
                     // PASSPORT child table mapping (doctype: Passport Details) — case-insensitive
+                    console.log('[Passport] parsed object:', parsed);
+                    console.log('[Passport] document field:', parsed.document);
+
                     if ((parsed.document || '').trim().toLowerCase() === 'passport'
                         && isTableField(frm, 'custom_passport')) {
 
+                        console.log('[Passport] Document is PASSPORT and custom_passport is a Table field → mapping');
+
                         const passport_no = parsed['doc._number'] || parsed.doc_number || '';
+                        console.log('[Passport] passport_no:', passport_no);
 
                         // Check if this passport already exists → update, else append
                         let passport_row = (frm.doc.custom_passport || []).find(
                             row => (row.passport_no || '').trim().toUpperCase() === passport_no.trim().toUpperCase()
                         );
 
-                        if (!passport_row) {
+                        if (passport_row) {
+                            console.log('[Passport] Existing row found → updating row:', passport_row.name);
+                        } else {
                             passport_row = frm.add_child('custom_passport');
+                            console.log('[Passport] No existing row → appended new row:', passport_row.name);
                         }
 
                         passport_row.passport_no = passport_no;
@@ -173,7 +182,18 @@ frappe.ui.form.on('Employee', {
                         passport_row.passport_issue_place = parsed.issuing_state || '';
                         passport_row.passport_attachment = scanImage;
 
+                        console.log('[Passport] Row after mapping:', {
+                            passport_no: passport_row.passport_no,
+                            passport_issue_date: passport_row.passport_issue_date,
+                            passport_expiry_date: passport_row.passport_expiry_date,
+                            passport_issue_place: passport_row.passport_issue_place,
+                            passport_attachment: passport_row.passport_attachment
+                        });
+
                         frm.refresh_field('custom_passport');
+                        console.log('[Passport] custom_passport table now has', (frm.doc.custom_passport || []).length, 'row(s)');
+                    } else {
+                        console.log('[Passport] Skipped — not a passport or custom_passport is not a Table field');
                     }
 
                     await frm.save();
