@@ -64,9 +64,11 @@ frappe.ui.form.on('Employee', {
 
                     const values = d.get_values();
                     const mrz = values.mrz_input;
+                    let parsed = {};
+                    let scanImage = '';
 
                     if (mrz) {
-                        const parsed = parseMRZ(mrz);
+                        parsed = parseMRZ(mrz);
 
                         if (parsed.forenames) frm.set_value('first_name', parsed.forenames);
                         if (parsed.surname) frm.set_value('last_name', parsed.surname);
@@ -75,6 +77,7 @@ frappe.ui.form.on('Employee', {
                             frm.set_value('passport_number', parsed['doc._number'] || parsed.doc_number);
                         if (parsed.nationality) frm.set_value('custom_nationality', parsed.nationality);
                         if (parsed.issuing_state) frm.set_value('place_of_issue', parsed.issuing_state);
+                        if (parsed.issue_date) frm.set_value('date_of_issue', parsed.issue_date);
                     }
 
                     let latest_doc = await frappe.db.get_list('Scanned Documents', {
@@ -132,10 +135,12 @@ frappe.ui.form.on('Employee', {
                                 // Single image → store in front image field
                                 frm.set_value('custom_passport_front_image', doc.front_image || doc.back_image || '');
                                 frm.set_value('custom_passport_back_image', ''); // empty back field
+                                scanImage = doc.front_image || doc.back_image || '';
                             } else {
                                 // Two images
                                 frm.set_value('custom_passport_front_image', doc.front_image || '');
                                 frm.set_value('custom_passport_back_image', doc.back_image || '');
+                                scanImage = doc.front_image || '';
                             }
                         }
 
@@ -145,6 +150,30 @@ frappe.ui.form.on('Employee', {
                             message: __('Scanned image(s) set successfully'),
                             indicator: 'green'
                         });
+                    }
+
+                    // PASSPORT child table mapping (doctype: Passport Details) — case-insensitive
+                    if ((parsed.document || '').trim().toLowerCase() === 'passport'
+                        && isTableField(frm, 'custom_passport')) {
+
+                        const passport_no = parsed['doc._number'] || parsed.doc_number || '';
+
+                        // Check if this passport already exists → update, else append
+                        let passport_row = (frm.doc.custom_passport || []).find(
+                            row => (row.passport_no || '').trim().toUpperCase() === passport_no.trim().toUpperCase()
+                        );
+
+                        if (!passport_row) {
+                            passport_row = frm.add_child('custom_passport');
+                        }
+
+                        passport_row.passport_no = passport_no;
+                        passport_row.passport_issue_date = normalizeDateToYMD(parsed.issue_date);
+                        passport_row.passport_expiry_date = normalizeDateToYMD(parsed.expiry_date);
+                        passport_row.passport_issue_place = parsed.issuing_state || '';
+                        passport_row.passport_attachment = scanImage;
+
+                        frm.refresh_field('custom_passport');
                     }
 
                     await frm.save();
